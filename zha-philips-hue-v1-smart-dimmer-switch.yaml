@@ -1,0 +1,93 @@
+blueprint:
+  domain: automation
+  name: Philips Hue Dimmer Switch RWL021
+  description: Top button steps through brightnesses, bottom button turns off
+  input:
+    dimmers:
+      name: Dimmer Switch
+      selector:
+        device:
+          integration: zha
+          model: RWL021
+          multiple: true
+    light:
+      name: Light
+      selector:
+        target:
+          entity:
+            domain: light
+    initial_level:
+      name: Initial Level
+      default: 128
+      selector:
+        number:
+          min: 0
+          max: 255
+    lock_down:
+      name: Lock at night
+      description: Only low light will be possible between 8pm-7am
+      default: false
+      selector:
+        boolean:
+mode: single
+max_exceeded: silent
+trigger:
+  - platform: event
+    event_type: zha_event
+variables:
+  dimmers: !input dimmers
+condition: "{{ trigger.event.data.device_id in dimmers }}"
+action:
+  - variables:
+      command_type: "{{ trigger.event.data.command }}"
+      night_time: "{{ now() < today_at('07:15') or today_at('20:00') < now() }}"
+      lock_down_at_night: !input lock_down
+      initial_level: !input initial_level
+      lock_down: "{{ lock_down_at_night and night_time }}"
+  - choose:
+      - conditions: '{{ command_type in ["on", "on_short_release", "on_press"] }}'
+        sequence:
+          - choose:
+            - conditions: "{{ is_state('timer.multipress', 'idle') }}"
+              sequence:
+                - service: light.turn_on
+                  data:
+                    brightness: "{{ 16 if lock_down else initial_level }}"
+                    transition: 1
+                  target: !input light
+            - conditions: "{{ not lock_down }}"
+              sequence:
+                - service: light.turn_on
+                  data:
+                    brightness_step: 64
+                    transition: 1
+                  target: !input light
+
+          - service: timer.start
+            target:
+              entity_id: timer.multipress
+
+      - conditions: '{{ (command_type in ["up_short_release", "up_press"] or (command_type == "step" and trigger.event.data.params.step_mode == trigger.event.data.params.step_mode.Up)) and not lock_down }}'
+        sequence:
+          - service: light.turn_on
+            data:
+              brightness_step: 16
+            target: !input light
+
+      - conditions: '{{ command_type in ["down_short_release", "down_press"] or (command_type == "step" and trigger.event.data.params.step_mode == trigger.event.data.params.step_mode.Down) }}'
+        sequence:
+          - service: light.turn_on
+            data:
+              brightness_step: -16
+            target: !input light
+
+      - conditions: '{{ command_type in ["off_press", "off_with_effect", "off_short_release"] }}'
+        sequence:
+          - service: light.turn_off
+            target: !input light
+          - service: timer.cancel
+            target:
+              entity_id: timer.multipress
+
+  - delay:
+      milliseconds: 500
