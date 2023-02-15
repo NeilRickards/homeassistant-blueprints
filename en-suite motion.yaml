@@ -14,7 +14,7 @@ trigger:
 action:
   - if:
       - condition: template
-        value_template: "{{ today_at('07:15') < now() < today_at('23:30') }}"
+        value_template: "{{ today_at('07:15') < now() < today_at('23:55') }}"
     then:
       - if:
           - condition: state
@@ -58,16 +58,16 @@ action:
     else:
       - if:
           - condition: state
-            entity_id: light.silicon_labs_ezsp_en_suite_lights_zha_group_0x0008
+            entity_id: light.signify_netherlands_b_v_ltc021_huelight
             state: "off"
         then:
           - service: light.turn_on
             data:
-              brightness: 16
               transition: 2
+              brightness_pct: 1
             target:
               entity_id:
-                - light.silicon_labs_ezsp_en_suite_lights_zha_group_0x0008
+                - light.signify_netherlands_b_v_ltc021_huelight
       - wait_for_trigger:
           - platform: state
             entity_id:
