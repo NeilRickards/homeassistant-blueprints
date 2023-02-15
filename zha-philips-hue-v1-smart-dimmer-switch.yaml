@@ -44,6 +44,7 @@ action:
       lock_down_at_night: !input lock_down
       initial_level: !input initial_level
       lock_down: "{{ lock_down_at_night and night_time }}"
+      light: !input light
   - choose:
       - conditions: '{{ command_type in ["on", "on_short_release", "on_press"] }}'
         sequence:
@@ -76,10 +77,21 @@ action:
 
       - conditions: '{{ command_type in ["down_short_release", "down_press"] or (command_type == "step" and trigger.event.data.params.step_mode == trigger.event.data.params.step_mode.Down) }}'
         sequence:
-          - service: light.turn_on
-            data:
-              brightness_step: -16
-            target: !input light
+          - if:
+              - condition: numeric_state
+                entity_id: light.entity_id
+                attribute: brightness
+                above: 18
+            then:
+              - service: light.turn_on
+                data:
+                  brightness_step: -16
+                target: !input light
+            else:
+              - service: light.turn_on
+                data:
+                  brightness: 3
+                target: !input light
 
       - conditions: '{{ command_type in ["off_press", "off_with_effect", "off_short_release"] }}'
         sequence:
