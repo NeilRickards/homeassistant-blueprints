@@ -77,21 +77,10 @@ action:
 
       - conditions: '{{ command_type in ["down_short_release", "down_press"] or (command_type == "step" and trigger.event.data.params.step_mode == trigger.event.data.params.step_mode.Down) }}'
         sequence:
-          - if:
-              - condition: numeric_state
-                entity_id: light.entity_id
-                attribute: brightness
-                above: 18
-            then:
-              - service: light.turn_on
-                data:
-                  brightness_step: -16
-                target: !input light
-            else:
-              - service: light.turn_on
-                data:
-                  brightness: 3
-                target: !input light
+          - service: light.turn_on
+            data:
+              brightness: '{{ max(3, state_attr(light.entity_id, "brightness") - 16) }}'
+            target: !input light
 
       - conditions: '{{ command_type in ["off_press", "off_with_effect", "off_short_release"] }}'
         sequence:
