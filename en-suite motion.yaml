@@ -1,0 +1,93 @@
+alias: En-Suite Motion
+description: ""
+trigger:
+  - platform: state
+    entity_id:
+      - binary_sensor.en_suite_motion_occupancy_2
+    from: "off"
+    to: "on"
+  - platform: state
+    entity_id:
+      - binary_sensor.en_suite_motion_2_iaszone_2
+    from: "off"
+    to: "on"
+action:
+  - if:
+      - condition: template
+        value_template: "{{ today_at('07:15') < now() < today_at('23:30') }}"
+    then:
+      - if:
+          - condition: state
+            entity_id: light.silicon_labs_ezsp_en_suite_lights_zha_group_0x0008
+            state: "off"
+        then:
+          - service: light.turn_on
+            data:
+              brightness: 128
+              transition: 1
+            target:
+              entity_id:
+                - light.silicon_labs_ezsp_en_suite_lights_zha_group_0x0008
+      - wait_for_trigger:
+          - platform: state
+            entity_id:
+              - binary_sensor.en_suite_motion_occupancy_2
+            from: "on"
+            to: "off"
+          - platform: state
+            entity_id:
+              - binary_sensor.en_suite_motion_2_iaszone_2
+            from: "on"
+            to: "off"
+      - delay:
+          hours: 0
+          minutes: 15
+          seconds: 0
+          milliseconds: 0
+      - service: light.turn_on
+        data:
+          brightness_step_pct: -20
+        target:
+          entity_id:
+            - light.silicon_labs_ezsp_en_suite_lights_zha_group_0x0008
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 30
+          milliseconds: 0
+    else:
+      - if:
+          - condition: state
+            entity_id: light.silicon_labs_ezsp_en_suite_lights_zha_group_0x0008
+            state: "off"
+        then:
+          - service: light.turn_on
+            data:
+              brightness: 16
+              transition: 2
+            target:
+              entity_id:
+                - light.silicon_labs_ezsp_en_suite_lights_zha_group_0x0008
+      - wait_for_trigger:
+          - platform: state
+            entity_id:
+              - binary_sensor.en_suite_motion_occupancy_2
+            from: "on"
+            to: "off"
+          - platform: state
+            entity_id:
+              - binary_sensor.en_suite_motion_2_iaszone_2
+            from: "on"
+            to: "off"
+      - delay:
+          hours: 0
+          minutes: 2
+          seconds: 0
+          milliseconds: 0
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id:
+        - light.silicon_labs_ezsp_en_suite_lights_zha_group_0x0008
+        - light.feibit_fnb56_skt1jxn1_0_light_2
+mode: restart
