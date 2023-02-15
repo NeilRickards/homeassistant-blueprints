@@ -45,13 +45,12 @@ trigger:
   to: "on"
 
 action:
+  - variables:
+      light_target: !input light_target
   - choose:
-      #- conditions:
-      #    - condition: state
-      #      entity_id: (!input light_target)[0]
-      #      state: "off"
-      #  sequence: []
       - conditions:
+          - condition: template
+            value_template: '{{ state(light_target.entity_id) == "off" }}'
           - condition: sun
             after: sunrise
             before: sunset
