@@ -44,6 +44,7 @@ action:
       lock_down_at_night: !input lock_down
       initial_level: !input initial_level
       lock_down: "{{ lock_down_at_night and night_time }}"
+      light: !input light
   - choose:
       # RWL022 dimmers have a toogle at the top so sometimes send "off_with_effect"
       # Use this as an old RWL021 style on-button and the "hue" button as off
@@ -80,7 +81,7 @@ action:
         sequence:
           - service: light.turn_on
             data:
-              brightness_step: -16
+              brightness: '{{ max(3, state_attr(light.entity_id, "brightness") - 16) }}'
             target: !input light
 
       # new RWL022 remotes have "recall" at the bottom - treat this as old-style "off"
